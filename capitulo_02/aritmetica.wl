@@ -1,0 +1,14 @@
+ClearAll["Global`*"];
+results={};
+check[id_,value_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[value]|>];
+check["c02.e0031", (((2/25)*3) == (6/25))];
+check["c02.e0095", ((10^5) == ((((10*10)*10)*10)*10)) && (((((10*10)*10)*10)*10) == 100000)];
+check["c02.e0096", ((8*(10^5)) == 800000)];
+check["c02.e0097", ((3*(10^5)) == 300000)];
+check["c02.e0098", ((5*(10^4)) == 50000)];
+check["c02.e0134", ((2^9) == 512)];
+check["c02.e0135", ((2^10) == 1024)];
+check["c02.e0197", (((63/100)/20) == (63/2000))];
+check["c02.e0198", (((141/100)/20) == (141/2000))];
+Print[ExportString[<|"checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>,"RawJSON"]];
+Exit[If[And@@Lookup[results,"passed"],0,1]];

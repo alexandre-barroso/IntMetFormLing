@@ -1,0 +1,82 @@
+results={};
+check[id_,condition_] := If[TrueQ[condition],AppendTo[results,<|"id"->id,"passed"->True|>],Print[id];Exit[1]];
+softmax[z_List] := If[Length[z]==0,$Failed,Exp[z]/Total[Exp[z]]];
+attention[q_?MatrixQ,k_?MatrixQ,v_?MatrixQ] := Module[{scores,weights,n,d},
+  {n,d}=Dimensions[q];
+  If[n<=0||d<=0||Dimensions[k]!={n,d}||Dimensions[v][[1]]!=n,Return[$Failed]];
+  scores=q.Transpose[k]/Sqrt[d];
+  weights=softmax /@ scores;
+  {scores,weights,weights.v}
+];
+layer[x_?MatrixQ,w1_?MatrixQ,w2_?MatrixQ,b1_?MatrixQ,b2_?MatrixQ] := Module[{d,h,hidden},
+  d=Dimensions[x][[2]];h=Dimensions[w1][[2]];
+  If[Dimensions[x][[1]]!=1||Dimensions[w1][[1]]!=d||Dimensions[w2]!={h,d}||Dimensions[b1]!={1,h}||Dimensions[b2]!={1,d},Return[$Failed]];
+  hidden=Map[Max[0,#]&,x.w1+b1,{2}];
+  hidden.w2+b2
+];
+check["softmax_exponential_positive",FullSimplify[Exp[z]>0,Element[z,Reals]]];
+check["softmax_normalization_base",Together[Total[softmax[{z}]]-1]==0];
+check["softmax_normalization_induction",FullSimplify[zz/(zz+u)+u/(zz+u)==1&&zz+u>0,zz>0&&u>0]];
+check["softmax_reject_empty",softmax[{}]===$Failed];
+logits={6/10,11/10,-15/10,12/10,32/10,-11/10};
+weights=softmax[logits];
+check["softmax_source_distribution",FullSimplify[Total[weights]==1&&And@@Thread[weights>0]]];
+check["softmax_source_range",FullSimplify[And@@Thread[weights<=1]]];
+queries={{q11,q12},{q21,q22}};keys={{k11,k12},{k21,k22}};values={{v11},{v21}};
+{scores,alpha,out}=attention[queries,keys,values];
+check["attention_composed_scores",And@@Flatten[Table[Expand[scores[[i,j]]-Sum[queries[[i,r]]keys[[j,r]],{r,2}]/Sqrt[2]]==0,{i,2},{j,2}]]];
+check["attention_composed_weights",And@@Flatten[Table[Together[alpha[[i,j]]-Exp[scores[[i,j]]]/Sum[Exp[scores[[i,m]]],{m,2}]]==0,{i,2},{j,2}]]];
+check["attention_composed_output",And@@Table[Together[out[[i,1]]-Sum[Exp[scores[[i,j]]]values[[j,1]]/Sum[Exp[scores[[i,m]]],{m,2}],{j,2}]]==0,{i,2}]];
+check["attention_composed_normalization",And@@Table[Together[Total[alpha[[i]]]-1]==0,{i,2}]];
+check["attention_reject_mismatched_keys",attention[queries,ConstantArray[0,{3,2}],values]===$Failed];
+check["attention_reject_mismatched_values",attention[queries,keys,ConstantArray[0,{3,1}]]===$Failed];
+check["source_dimension_scale",Sqrt[512/8]==8];
+x={{x1,x2}};w1={{a11,a12},{a21,a22}};w2={{b11,b12},{b21,b22}};b1={{c1,c2}};b2={{d1,d2}};
+ff=layer[x,w1,w2,b1,b2];
+check["ffn_composed_relu",And@@Table[Expand[ff[[1,k]]-Sum[Max[0,Sum[x[[1,r]]w1[[r,j]],{r,2}]+b1[[1,j]]]w2[[j,k]],{j,2}]-b2[[1,k]]]==0,{k,2}]];
+check["ffn_reject_mismatched_hidden",layer[x,w1,ConstantArray[0,{3,2}],b1,b2]===$Failed];
+counts={c0,c1,c2};
+lp=(counts+1)/(Total[counts]+Length[counts]);
+check["laplace_distribution",FullSimplify[Total[lp]==1&&And@@Thread[lp>0]&&And@@Thread[lp<=1],And@@Thread[counts>=0]]];
+check["laplace_denominator_identity",Total[counts+1]==Total[counts]+3];
+check["laplace_nonempty_denominator",Resolve[ForAll[{n,v},Implies[n>=0&&v>=1,n+v>0]],Reals]];
+check["laplace_source_denominator",927+1446==2373&&(608+1)/2373>0&&(0+1)/2373>0];
+q=608/927;ll=608 Log[p]+319 Log[1-p];dd=D[ll,p];
+check["mle_actual_derivative",Together[dd-(608-927p)/(p(1-p))]==0];
+check["mle_domain_nonzero_denominator",Reduce[0<p<1&&p(1-p)==0,p,Reals]===False];
+check["mle_increasing_before",Reduce[0<p<q&&dd<=0,p,Reals]===False];
+check["mle_decreasing_after",Reduce[q<p<1&&dd>=0,p,Reals]===False];
+check["mle_only_critical",Reduce[0<p<1&&dd==0,p,Reals]==(p==q)];
+lik=p^608(1-p)^319;
+check["mle_boundary_values",(lik/.p->0)==0&&(lik/.p->1)==0&&(lik/.p->q)>0];
+check["mle_log_tangent_certificate",Expand[608(p/q-1)+319((1-p)/(1-q)-1)]==0];
+check["brier_binary_exact_convention",Expand[(bp-by)^2+((1-bp)-(1-by))^2-2(bp-by)^2]==0];
+check["brier_nonnegative_sum_step",Resolve[ForAll[{ss,bp,by},Implies[ss>=0,ss+(bp-by)^2>=0]],Reals]];
+check["brier_nonempty_average",Resolve[ForAll[{ss,nn},Implies[ss>=0&&nn>0,ss/nn>=0]],Reals]];
+check["brier_probability_domain",Resolve[ForAll[{pj,rest},Implies[pj>=0&&rest>=0&&pj+rest==1,0<=pj<=1]],Reals]];
+
+prec=tp/(tp+fp);rec=tp/(tp+fn);
+check["f1_counts_identity",FullSimplify[2prec rec/(prec+rec)==2tp/(2tp+fp+fn),tp>0&&fp>=0&&fn>=0]];
+check["f1_counts_denominators",Resolve[ForAll[{tp,fp,fn},Implies[tp>0&&fp>=0&&fn>=0,tp+fp>0&&tp+fn>0&&2tp+fp+fn>0]],Reals]];
+
+Clear[z,y,a,w,x];
+sigmoid=Exp[z]/(1+Exp[z]);
+check["cross_entropy_full_rewrite",FullSimplify[-(y Log[sigmoid]+(1-y)Log[1-sigmoid])==Log[1+Exp[z]]-y z,Element[{z,y},Reals]]];
+check["loss_derivative_full",FullSimplify[D[Log[1+Exp[z]]-y z,z]==sigmoid-y,Element[{z,y},Reals]]];
+check["loss_gradient_coordinate",FullSimplify[D[Log[1+Exp[a+w x]]-y(a+w x),w]==(Exp[a+w x]/(1+Exp[a+w x])-y)x,Element[{a,w,x,y},Reals]]];
+check["sigmoid_derivative_identity",FullSimplify[D[sigmoid,z]==sigmoid(1-sigmoid),Element[z,Reals]]];
+check["sigmoid_derivative_positive",FullSimplify[Exp[z]/(1+Exp[z])^2>0,Element[z,Reals]]];
+check["word2vec_coordinate_update",Expand[(uu-rate(prob-target)vv)vv-(uu vv-rate(prob-target)vv^2)]==0];
+check["mixture_sum_step",Expand[ww(g1+g2)+(1-ww)(c1+c2)-(ww g1+(1-ww)c1)-(ww g2+(1-ww)c2)]==0];
+check["mixture_normalization",Expand[ww 1+(1-ww)1]==1];
+check["mixture_nonnegative",Resolve[ForAll[{ww,gg,cc},Implies[0<=ww<=1&&gg>=0&&cc>=0,ww gg+(1-ww)cc>=0]],Reals]];
+value[{}]=v0;value[{"A"}]=va;value[{"B"}]=vb;value[{"A","B"}]=vab;
+contributions=<|"A"->{},"B"->{}|>;
+Do[previous={};Do[current=Union[previous,{head}];contributions[head]=Append[contributions[head],value[current]-value[previous]];previous=current,{head,order}],{order,Permutations[{"A","B"}]}];
+phiA=Mean[contributions["A"]];phiB=Mean[contributions["B"]];
+check["shapley_two_orders",Expand[phiA-((va-v0)+(vab-vb))/2]==0&&Expand[phiB-((vb-v0)+(vab-va))/2]==0];
+check["shapley_two_efficiency",Expand[phiA+phiB-(vab-v0)]==0];
+
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[0];

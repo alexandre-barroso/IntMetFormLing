@@ -1,0 +1,13 @@
+ClearAll["Global`*"];
+results={};
+check[id_,value_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[value]|>];
+check["c03.e0057", ((4/4) == 1)];
+check["c03.e0066", ((158/200) == (79/100))];
+check["c03.e0067", ((72/200) == (9/25))];
+check["c03.e0068", ((5*5) == 25)];
+check["c03.e0097", (((((1+2)+1)+3)+1) == 8)];
+check["c03.e0324", ((69-59) == 10)];
+check["c03.e0325", (((8651/100)-85) == (151/100))];
+check["c03.e0326", ((96-72) == 24)];
+Print[ExportString[<|"checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>,"RawJSON"]];
+Exit[If[And@@Lookup[results,"passed"],0,1]];

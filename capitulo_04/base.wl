@@ -1,0 +1,12 @@
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+identity=IdentityMatrix[9];x=Array[xi,9];
+check["c04_p02_coordinate",identity.x==x];
+check["c04_p02_independent",LinearSolve[identity,ConstantArray[0,9]]==ConstantArray[0,9]];
+check["c04_p02_orthonormal",Transpose[identity].identity==IdentityMatrix[9]];
+check["c04_p02_basis_reconstruction",Total[Table[x[[i]]identity[[All,i]],{i,9}]]==x];
+check["c04_p02_unit_norm",And@@Table[Norm[identity[[All,i]]]==1,{i,9}]];
+check["c04_p02_orthogonal",And@@Flatten[Table[If[i==j,True,identity[[All,i]].identity[[All,j]]==0],{i,9},{j,9}]]];
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];
