@@ -1,0 +1,17 @@
+ClearAll["Global`*"];
+folds={originalSum,ratioSum,cancelledSum};
+contribution[index_,o_,e_]:=Piecewise[{{0,o==0}}, {o(Log[o/total]-Log[e/total]),o Log[(o/total)/(e/total)],o Log[o/e]}[[index]]];
+unfold[expression_]:=expression/.Join[Table[folds[[i]][nil]->0,{i,3}],Table[folds[[i]][cons[head,tail]]->contribution[i,observed[head],expected[head]]+folds[[i]][tail],{i,3}]];
+structuralEquality[left_,right_]:=Module[{baseLeft,baseRight,hypothesisLeft,hypothesisRight,stepLeft,stepRight},If[!FreeQ[{left,right},head|tail],Return[False]];baseLeft=unfold[left/.xs->nil];baseRight=unfold[right/.xs->nil];If[!TrueQ[FullSimplify[baseLeft==baseRight,total>0]],Return[False]];hypothesisLeft=left/.xs->tail;hypothesisRight=right/.xs->tail;stepLeft=unfold[left/.xs->cons[head,tail]]/.hypothesisLeft->hypothesisRight;stepRight=unfold[right/.xs->cons[head,tail]]/.hypothesisLeft->hypothesisRight;And@@Table[TrueQ[FullSimplify[(stepLeft==stepRight)/.observed[head]->value,total>0&&expected[head]>0&&positiveCount>0]],{value,{0,positiveCount}}]];
+results={};
+check[name_,value_]:=If[TrueQ[value],AppendTo[results,<|"id"->name,"passed"->True|>],Print[name];Exit[1]];
+check["nonnegative_count_cases_exhaustive",Resolve[ForAll[o,Implies[o>=0,o==0||o>0]],Reals]];
+check["finite_log_ratio_induction",structuralEquality[originalSum[xs],ratioSum[xs]]];
+check["finite_total_cancellation_induction",structuralEquality[ratioSum[xs],cancelledSum[xs]]];
+check["zero_contributions",And@@Table[contribution[i,0,expected[head]]===0,{i,3}]];
+check["zero_contribution_right_limit",Limit[x Log[x/e],x->0,Direction->"FromAbove",Assumptions->e>0]==0];
+check["wrong_sum_base_rejected",!structuralEquality[originalSum[xs],ratioSum[xs]+1]];
+check["wrong_sum_sign_rejected",!structuralEquality[originalSum[xs],-ratioSum[xs]]];
+check["nonfresh_induction_rejected",!structuralEquality[originalSum[xs],ratioSum[xs]+head]];
+Print[ExportString[<|"backend"->"Wolfram","scope"->"finite sums over observed>=0 expected>0 total>0; zero terms defined continuously; structural induction in explicit list recursions with exhaustive zero/positive head cases","checks"->Length[results],"passed"->True,"results"->results|>,"RawJSON"]];
+Exit[0];

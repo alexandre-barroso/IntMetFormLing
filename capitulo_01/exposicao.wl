@@ -1,0 +1,17 @@
+ClearAll["Global`*"];
+checks={};
+check[name_, proposition_]:=If[TrueQ[proposition],AppendTo[checks,<|"id"->name,"passed"->True|>],Print[{name,proposition}];Exit[1]];
+check["expected_count",FullSimplify[Sum[q,{i,1,n}]==n*q,n>0&&Element[n,Integers]&&Element[q,Reals]]];
+check["ttr_repeated_type",Resolve[ForAll[{v,n},v>=0&&n>0, v/(n+1)<=v/n],Reals]];
+check["ttr_repeated_type_strict",Resolve[ForAll[{v,n},v>0&&n>0, v/(n+1)<v/n],Reals]];
+check["ttr_new_type",Resolve[ForAll[{v,n},n>0&&v<=n, v/n<=(v+1)/(n+1)],Reals]];
+check["ttr_bounds",Resolve[ForAll[{v,n},v>=0&&n>0&&v<=n,0<=v/n<=1],Reals]];
+check["normalization_scaling",Resolve[ForAll[{c,n,k,b},n!=0&&k!=0,(k*c)/(k*n)*b==c/n*b],Reals]];
+check["normalization_order",Resolve[ForAll[{c1,c2,n1,n2,b},n1>0&&n2>0&&b>0,Equivalent[c1/n1*b<c2/n2*b,c1*n2<c2*n1]],Reals]];
+words=StringSplit["They picnicked by the pool then lay back on the grass and looked at the stars"];
+check["figure_F01_tokens",Length[words]==16];
+check["figure_F01_types",Length[DeleteDuplicates[words]]==14];
+check["figure_F01_repetitions",Flatten[Position[words,"the"]]=={4,10,15}];
+check["figure_F01_punctuation",Length[words]+Length[{",","."}]==18];
+Print[ExportString[<|"backend"->"Wolfram","scope"->"general real quantifier elimination and symbolic finite sum; exact published token sequence","checks"->Length[checks],"passed"->True,"results"->checks|>,"RawJSON"]];
+Exit[0];

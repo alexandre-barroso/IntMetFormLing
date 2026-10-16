@@ -1,0 +1,23 @@
+BeginPackage["DensityInterfaces`"];
+ClearAll[DensityInterfaces`verifyCertificates];
+If[!ValueQ[DensityInterfaces`DensityInterfaces`$LibraryMode], DensityInterfaces`DensityInterfaces`$LibraryMode=False];
+Begin["`Private`"];
+Block[{AnalysisProof`$LibraryMode=True}, Get[FileNameJoin[{DirectoryName[$InputFileName], "analise_geral.wl"}]]];
+certificateGzipBase64 = "H4sIAAAAAAACE71X227bOBD9FYFPCTpNdKEkKuguYC3gp31qd/clTb1uTDssdHElOZugzb8vKTkURZGyekkBG6AocWbOzJlD8gsqyg2t0dX1NcpzBCj/mNU1Av644E8LdHMD1+LH/2hd14ec8umvr52FQy+cTZk792WGxMt8j8AFTwxZvl+xoqnK7tO/LhD4lnlvZPfCeRCm3751zpyl8y9/Ou+ekf7pGbfgXL5/Lxecd58UmxXNGAcTdeardZYdZ0KIDYEYDAEZe3t++/X170psbXR/fvCQDaHbZkfklum55S9SPjpi+4MPpd125p/+5f6Oj7k9MX7gw4e2Mp2lZTu76Gb5aCnfB4AhAc+7kTE01QF1FT0WVdTN88ELbPFjubauaTYdvhpVN+59RB0J7BVcjAroka6C7foYvGRUTt89WU9hFvwpornOm5UzzLzixA/me+lzxZrdjrqGbA39fF9ZPQ7cBz+UyfWjYwGH2V047ANzUs7R35yzy84j/Vw/ClREhlryFnaHpKjofxVruB0/gcC1MCPwpAn6mW0kVuH3cCHcKmDSng0mU4GZZKqpabalWrJSjYFjbTsVZrvkUPBFhiqm5jVq+lNdITmvuSUPAiLrFsQQJPIhAuzKhxCwN90vPYBR4+CgbxzsA8ajxsHhSUoP7AOOLHlMB3tE65EIjOZK48RGAWLRyfSn6GQqGyo1NFToQugpSslBhBOaGAZqn9f7jDVmjhij/XtM7JlC35N8aaC7HV7gQ4ABcwUNIcQ9xPAI8Uj1Ddta5F0pMNtuV+3iGHzo97YNqz/NWn/UnzAZ6Ezk2nUmmtaZMyHhnLOLrg/UUA22poVGszV/g7PKiz26SX1Rlo0X3ebaIq3/ouO2+Sw4UdK/iiGWGhNFEEuZiPjZyJ8lOANII+mJcS89cQBxOD6CRXOlR/cEcWzNtiVfIopEZMDMB2IlXWKRo4GnFz/AEQ+IPxQmEtiFieA5wqRDmJSocUv8MKjIhwhDTIQckf4QQ54PMVIVQgIkVhG5ShnUeFXfS0Nrul3D6I1UUfM8F7Jv2vZF9IkvtvIbfsJeVzva8CvVF7ShRc2ax1VF66Zitw0rC1ExuqvWHzMqvhC3L3TlYUDbssoP2RpdKZeNhe2uAejucV82d7Ru726z7ifja9vJC9cTSAj0nhbNqiiLgu7WDbtXovdjLfr2PP1OhN9bXG2ch18U9qnjvYJK7Folr8jqUPDa9JDCSIP0bnAcGsISh2sTXOeVmE312XNzGvSzOrxkdoZnUyUht2W+z2guar1fVw1rBmkhZJyWgYvT6VDlZF5iXpbW+f6Z3ArMxFD9S0PZXT1i1XTNdvm6c9CbTly90y/Ph7GfsMeJek+rWmm/xNNMcsjfaFGtMR5F2PPebtZcBCvNOs9cZre0osWtiiYwuOd8+Qnun57+B4lfXzHuEgAA";
+DensityInterfaces`verifyCertificates[] := Module[{report,check,results={}},
+report=AnalysisProof`verifyProofGraph[ImportString[ImportByteArray[BaseDecode[certificateGzipBase64], {"GZIP", "Text"}], "RawJSON"]];
+If[!TrueQ[report["passed"]],Return[report]];
+check[id_,formula_,hypotheses_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[report["targets"][id]["formula"]===formula && Sort[report["targets"][id]["hypotheses"]]===Sort[hypotheses]],"formula"->formula,"hypotheses"->hypotheses|>];
+check["density_restriction_integrable","|- ( x e. A |-> ( F ` x ) ) e. L^1",{"|- ( x e. RR |-> ( F ` x ) ) e. L^1","|- A e. dom vol","|- A. x e. RR ( F ` x ) e. RR"}];
+check["density_event_nonnegative","|- 0 <_ S. A ( F ` x ) _d x",{"|- ( x e. RR |-> ( F ` x ) ) e. L^1","|- A e. dom vol","|- A. x e. RR ( F ` x ) e. RR","|- A. x e. RR 0 <_ ( F ` x )"}];
+check["density_disjoint_union","|- S. ( A u. B ) ( F ` x ) _d x = ( S. A ( F ` x ) _d x + S. B ( F ` x ) _d x )",{"|- ( A i^i B ) = (/)","|- ( x e. RR |-> ( F ` x ) ) e. L^1","|- A e. dom vol","|- A. x e. RR ( F ` x ) e. RR","|- B e. dom vol"}];
+check["density_complement_partition","|- S. RR ( F ` x ) _d x = ( S. A ( F ` x ) _d x + S. ( RR \\ A ) ( F ` x ) _d x )",{"|- ( x e. RR |-> ( F ` x ) ) e. L^1","|- A e. dom vol","|- A. x e. RR ( F ` x ) e. RR"}];
+check["density_empty_event","|- S. (/) ( F ` x ) _d x = 0",{}];
+check["density_sigma_empty","|- (/) e. dom vol",{}];
+check["density_sigma_universe","|- RR e. dom vol",{}];
+check["density_sigma_union","|- ( A u. B ) e. dom vol",{"|- A e. dom vol","|- B e. dom vol"}];
+check["density_sigma_difference","|- ( A \\ B ) e. dom vol",{"|- A e. dom vol","|- B e. dom vol"}];
+AssociateTo[report,{"checks"->Length[results],"results"->results,"passed"->And@@Lookup[results,"passed"]}];report];
+If[!TrueQ[DensityInterfaces`DensityInterfaces`$LibraryMode] && Length[$ScriptCommandLine]>0 && ExpandFileName[First[$ScriptCommandLine]]===ExpandFileName[$InputFileName], report=DensityInterfaces`verifyCertificates[]; Print[ExportString[KeyDrop[report,{"targets"}],"RawJSON"]];Exit[If[TrueQ[report["passed"]],0,1]]];
+End[];
+EndPackage[];

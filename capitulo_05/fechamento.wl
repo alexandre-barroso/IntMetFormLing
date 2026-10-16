@@ -1,0 +1,16 @@
+ClearAll[check, results, z, a, b, d, e, f];
+results = {};
+check[id_, condition_] := AppendTo[results, <|"id" -> id, "passed" -> TrueQ[condition]|>];
+check["square_nonnegative", Resolve[ForAll[z, z^2 >= 0], Reals]];
+check["square_zero_root", Resolve[ForAll[z, Equivalent[z^2 == 0, z == 0]], Reals]];
+check["sum_squares_zero_induction", Resolve[ForAll[{a, z}, a >= 0, Equivalent[a + z^2 == 0, a == 0 && z == 0]], Reals]];
+check["positive_divisor_preserves_zero", Resolve[ForAll[{z, d}, d > 0, Equivalent[z/d == 0, z == 0]], Reals]];
+check["absolute_nonnegative", Resolve[ForAll[z, Abs[z] >= 0], Reals]];
+check["absolute_zero_root", Resolve[ForAll[z, Equivalent[Abs[z] == 0, z == 0]], Reals]];
+check["nonnegative_sum_zero_induction", Resolve[ForAll[{a, b}, a >= 0 && b >= 0, Equivalent[a + b == 0, a == 0 && b == 0]], Reals]];
+check["excess_deficit_difference", Resolve[ForAll[z, Max[z, 0] - Max[-z, 0] == z], Reals]];
+check["absolute_split", Resolve[ForAll[z, Abs[z] == Max[z, 0] + Max[-z, 0]], Reals]];
+check["half_sum_equal_parts", Resolve[ForAll[{e, f}, e == f, (e + f)/2 == e], Reals]];
+report = <|"backend" -> "Wolfram Language", "checks" -> Length[results], "passed" -> And @@ Lookup[results, "passed"], "results" -> results|>;
+Print[ExportString[report, "RawJSON"]];
+If[!TrueQ[report["passed"]], Exit[1]];

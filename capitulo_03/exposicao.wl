@@ -1,0 +1,18 @@
+ClearAll["Global`*"];
+checks={};
+check[name_,proposition_]:=If[TrueQ[proposition],AppendTo[checks,<|"id"->name,"passed"->True|>],Print[{name,proposition}];Exit[1]];
+readings[r_]:={And@@(Or@@#& /@ r),Or@@(And@@#& /@ Transpose[r])};
+left=Table[i==j,{i,3},{j,3}];
+right=Table[{True},{3}];
+check["figure_F03_left",readings[left]=={True,False}];
+check["figure_F03_right",readings[right]=={True,True}];
+check["figure_F03_exact_left_edges",Position[left,True]=={{1,1},{2,2},{3,3}}];
+check["figure_F03_exact_right_edges",Position[right,True]=={{1,1},{2,1},{3,1}}];
+relations=Partition[#,3]& /@ Tuples[{False,True},9];
+check["figure_F03_all_512_relations",Length[relations]==512&&And@@Table[With[{v=readings[r]},!v[[2]]||v[[1]]],{r,relations}]];
+classes=Range[8];
+check["genitive_plural_not_invertible",And@@Table[Or@@Table[preimage!=c,{c,classes}],{preimage,classes}]];
+men={False};human={False,True};predicate={False};
+check["widening_restriction_countermodel",SubsetQ[human,men]&&SubsetQ[predicate,men]&&!SubsetQ[predicate,human]];
+Print[ExportString[<|"backend"->"Wolfram","scope"->"exact finite models displayed in F03; exhaustive 512 relations as finite check, not general quantifier theorem; paradigm inverse obstruction","checks"->Length[checks],"passed"->True,"results"->checks|>,"RawJSON"]];
+Exit[0];

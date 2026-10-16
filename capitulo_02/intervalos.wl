@@ -1,0 +1,26 @@
+results={};
+check[id_,condition_]:=If[TrueQ[condition],AppendTo[results,<|"id"->id,"passed"->True|>],Print[id];Exit[1]];
+logarithmBounds[value_,terms_]:=Module[{z,partial,error},If[!TrueQ[value>0&&IntegerQ[terms]&&terms>0],Return[$Failed]];z=(value-1)/(value+1);If[!TrueQ[Abs[z]<1],Return[$Failed]];partial=Sum[z^(2i+1)/(2i+1),{i,0,terms-1}];error=Abs[z]^(2terms+1)/(1-z^2);{2(partial-error),2(partial+error)}];
+Do[
+partial=Sum[x^(2i+1)/(2i+1),{i,0,n-1}];
+check["remainder_derivative_"<>ToString[n],Together[D[Log[(1+x)/(1-x)]-2partial,x]-2x^(2n)/(1-x^2)]==0];
+check["remainder_origin_"<>ToString[n],(Log[(1+x)/(1-x)]-2partial/.x->0)==0];
+check["integrated_majorant_"<>ToString[n],FullSimplify[Integrate[2t^(2n)/(1-x^2),{t,0,x},Assumptions->0<x<1]==2x^(2n+1)/((2n+1)(1-x^2)),0<x<1]],
+{n,{5,10,15,41,42}}];
+check["remainder_majorant_nonnegative",Resolve[ForAll[{t,z},Implies[0<=t<=z<1,1/(1-t^2)<=1/(1-z^2)]],Reals]];
+point=2270/67;coordinate=33880597/1000000;height=4870938636/1000000000;
+low=height-1/2000000000;high=height+1/2000000000;
+{l2,u2}=logarithmBounds[2,15];{la,ua}=logarithmBounds[182/125,10];{lr,ur}=logarithmBounds[1135/1072,5];
+targetLow=(627/200)l2-ua+(227/1000)lr-227/1000;
+targetHigh=(627/200)u2-la+(227/1000)ur-227/1000;
+lowLog=logarithmBounds[low,42];highLog=logarithmBounds[high,41];
+check["maximum_position_rounding",Abs[point-coordinate]<1/2000000];
+check["source_parameter_reduction",91/250==(182/125)/4&&point==(1135/1072)32&&(67/10000)point==227/1000];
+logVelocity=Log[1/((91/250)point^(-227/1000)Exp[227/1000])];
+logReduction=(627/200)Log[2]-Log[182/125]+(227/1000)Log[1135/1072]-227/1000;
+check["log_velocity_reduction",FullSimplify[logVelocity==logReduction]];
+check["height_lower_certificate",low>0&&lowLog[[2]]<targetLow];
+check["height_upper_certificate",targetHigh<highLog[[1]]];
+check["height_rounding_interval",high-low==1/1000000000&&(high+low)/2==height];
+Print[ExportString[<|"backend"->"Wolfram","arithmetic"->"exact rational enclosures with geometric remainder","checks"->Length[results],"passed"->True,"results"->results|>,"RawJSON"]];
+Exit[0];

@@ -1,0 +1,17 @@
+ClearAll["Global`*"];
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+gram=a b-c^2;
+check["finite_lagrange_base",(gram/.{a->0,b->0,c->0})==0];
+check["finite_lagrange_induction",Expand[(a+x^2)(b+y^2)-(c+x y)^2-(gram+y^2 a+x^2 b-2x y c)]==0];
+check["sum_of_squares_increment",Expand[(u y-v x)^2-(y^2 u^2+x^2 v^2-2x y u v)]==0];
+check["squared_increment_nonnegative",Resolve[ForAll[{u,v,x,y},(u y-v x)^2>=0],Reals]];
+check["nonnegative_dot_summand",Resolve[ForAll[{p,q},Implies[p>=0&&q>=0,p q>=0]],Reals]];
+check["cosine_range",Resolve[ForAll[{c,d},Implies[d>0&&c>=0&&c^2<=d^2,0<=c/d<=1]],Reals]];
+check["positive_scaling_norm",FullSimplify[Sqrt[a0^2 normv^2]==a0 normv,Element[{a0,normv},Reals]&&a0>0&&normv>0]];
+check["positive_scaling_cosine",FullSimplify[a0 c/(a0 normv normw)==c/(normv normw),Element[{a0,normv,normw,c},Reals]&&a0>0&&normv>0&&normw>0]];
+check["normalized_dot",FullSimplify[(c/(normv normw))/(Sqrt[normv^2/normv^2] Sqrt[normw^2/normw^2])==c/(normv normw),Element[{normv,normw,c},Reals]&&normv>0&&normw>0]];
+check["normalization_chain",FullSimplify[Sqrt[normv^2/normv^2]==normv/normv==1,Element[normv,Reals]&&normv>0]];
+report=<|"backend"->"Wolfram Language","method"->"symbolic finite-induction and quantified real-arithmetic certificates","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];

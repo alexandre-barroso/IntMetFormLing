@@ -1,0 +1,17 @@
+ClearAll["Global`*"];
+results={};
+check[id_,value_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[value]|>];
+velocity[n_]:=1/((364/1000)n^(-227/1000)Exp[(67/10000)n]);
+maximum=(227/1000)/(67/10000);
+check["maximum_position",maximum==2270/67&&Abs[maximum-33880597/1000000]<1/2000000];
+check["stationary_velocity",FullSimplify[D[velocity[n],n]/.n->maximum]==0];
+check["maximum_velocity_point",Abs[N[velocity[maximum],80]-4870938636/1000000000]<1/2000000000];
+check["log_velocity",FullSimplify[Log[velocity[n]]==-Log[364/1000]+(227/1000)Log[n]-(67/10000)n,n>0]];
+check["rational_log_scaling",364/1000==(182/125)/2^2&&maximum==(1135/1072)2^5];
+check["velocity_derivative",FullSimplify[D[velocity[n],n]==velocity[n]((227/1000)/n-67/10000),n>0]];
+check["velocity_positive",FullSimplify[velocity[n]>0,n>0]];
+check["velocity_derivative_positive_domain",Resolve[ForAll[n,Implies[n>0,Equivalent[(227/1000)/n-67/10000>0,n<2270/67]]],Reals]];
+check["velocity_derivative_negative_domain",Resolve[ForAll[n,Implies[n>0,Equivalent[(227/1000)/n-67/10000<0,n>2270/67]]],Reals]];
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->AllTrue[results,TrueQ[#["passed"]]&],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[TrueQ[report["passed"]],0,1]];

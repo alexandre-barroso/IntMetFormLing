@@ -1,0 +1,16 @@
+ClearAll["Global`*"];
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+s={4/10,3/10,3/10};o={6/10,2/10,2/10};d=o-s;dp=Total[Abs[d]]/2;
+check["F06_distributions",Total[s]==1&&Total[o]==1&&And@@Thread[Join[s,o]>0]];
+check["F06_differences",d=={1/5,-1/10,-1/10}];
+check["F06_balanced_excess",Total[d]==0&&Total[Select[d,Positive]]==1/5&&Total[Select[d,Negative]]==-1/5];
+check["F06_dp",dp==1/5];
+check["F06_minimum",Min[s]==3/10];
+check["F06_normalized",dp/(1-Min[s])==2/7];
+check["F06_material_percentages",100 s=={40,30,30}];
+check["F06_occurrence_percentages",100 o=={60,20,20}];
+check["F06_band_boundaries",Accumulate[Prepend[s,0]]=={0,2/5,7/10,1}&&Accumulate[Prepend[o,0]]=={0,3/5,4/5,1}];
+report=<|"backend"->"Wolfram Language","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];

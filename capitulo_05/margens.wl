@@ -1,0 +1,14 @@
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+assumptions=Element[{m,n},Integers]&&m>0&&n>0&&Element[rows,Vectors[m,Reals]]&&Element[columns,Vectors[n,Reals]]&&Element[onesRow,Vectors[m,Reals]]&&Element[onesColumn,Vectors[n,Reals]];
+expected=TensorProduct[rows,columns]/total;
+check["expected_nonnegative",FullSimplify[rowEntry*columnEntry/total>=0,rowEntry>=0&&columnEntry>=0&&total>0]];
+rowIdentity=TensorReduce[expected.onesColumn-rows*(columns.onesColumn)/total,Assumptions->assumptions];
+check["expected_row_general",rowIdentity===SymbolicZerosArray[{m}]&&MemberQ[{0,SymbolicZerosArray[{m}]},TensorReduce[(rows*(columns.onesColumn)/total/.HoldPattern[columns.onesColumn]->total)-rows,Assumptions->assumptions]]];
+columnIdentity=TensorReduce[onesRow.expected-(onesRow.rows)*columns/total,Assumptions->assumptions];
+check["expected_column_general",columnIdentity===SymbolicZerosArray[{n}]&&MemberQ[{0,SymbolicZerosArray[{n}]},TensorReduce[((onesRow.rows)*columns/total/.HoldPattern[onesRow.rows]->total)-columns,Assumptions->assumptions]]];
+totalIdentity=TensorReduce[onesRow.expected.onesColumn-(onesRow.rows)*(columns.onesColumn)/total,Assumptions->assumptions];
+check["expected_total_general",totalIdentity===0&&FullSimplify[((onesRow.rows)*(columns.onesColumn)/total/.{HoldPattern[onesRow.rows]->total,HoldPattern[columns.onesColumn]->total})==total,total>0]];
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];

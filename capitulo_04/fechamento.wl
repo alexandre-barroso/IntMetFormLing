@@ -1,0 +1,12 @@
+ClearAll[check, results, a, b, s, c, indicator];
+results = {};
+check[id_, condition_] := AppendTo[results, <|"id" -> id, "passed" -> TrueQ[condition]|>];
+check["binary_product_conjunction", And @@ Flatten[Table[a b == Boole[a == 1 && b == 1], {a, 0, 1}, {b, 0, 1}]]];
+check["empty_sum_count", Total[{}] == Length[{}] == 0];
+check["sum_count_induction", Resolve[ForAll[{s, c, indicator}, s == c, s + indicator == c + indicator], Reals]];
+check["indicator_counts_one", And @@ Flatten[Table[MemberQ[{0, 1}, Boole[a && b]], {a, {False, True}}, {b, {False, True}}]]];
+check["antipodal_mean_zero", Resolve[ForAll[u, (u - u)/2 == 0], Reals]];
+check["unit_vectors_mean_need_not_unit", Sqrt[1^2] == 1 && Sqrt[(-1)^2] == 1 && Sqrt[((1 - 1)/2)^2] == 0];
+report = <|"backend" -> "Wolfram Language", "checks" -> Length[results], "passed" -> And @@ Lookup[results, "passed"], "results" -> results|>;
+Print[ExportString[report, "RawJSON"]];
+If[!TrueQ[report["passed"]], Exit[1]];

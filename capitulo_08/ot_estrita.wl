@@ -1,0 +1,13 @@
+ClearAll[p,q,r,check,prefers];
+results={};
+check[name_,condition_]:=If[TrueQ[condition],AppendTo[results,name],Print[name];Exit[1]];
+check["irreflexive",Resolve[ForAll[p,Not[p<p]],Reals]];
+check["asymmetric_same_first_difference",Resolve[ForAll[{p,q},p<q\[Implies]Not[q<p]],Reals]];
+check["asymmetric_different_first_difference",Resolve[ForAll[{p,q},p==q\[Implies]Not[p<q]],Reals]];
+check["transitive_same_first_difference",Resolve[ForAll[{p,q,r},p<q&&q<r\[Implies]p<r],Reals]];
+check["transitive_left_first_difference",Resolve[ForAll[{p,q,r},p<q&&q==r\[Implies]p<r],Reals]];
+check["transitive_right_first_difference",Resolve[ForAll[{p,q,r},p==q&&q<r\[Implies]p<r],Reals]];
+prefers[p_List,q_List]:=Module[{pairs=Select[Transpose[{p,q}],#[[1]]!=#[[2]]&]},Length[pairs]>0&&pairs[[1,1]]<pairs[[1,2]]];
+check["source_profile_priority",prefers[{1,1},{2,0}]&&!prefers[{2,0},{1,1}]];
+check["ties_no_strict_winner",!prefers[{1,0},{1,0}]];
+Print[ExportString[<|"passed"->True,"checks"->Length[results],"results"->results,"scope"->"Quantifier elimination for every arithmetic first-difference case; arbitrary finite-profile order is formalized in OtEstrita.lean."|>,"RawJSON"]];

@@ -1,0 +1,18 @@
+results={};
+check[id_,value_,hypotheses_] := AppendTo[results,<|"id"->id,"hypotheses"->hypotheses,"passed"->TrueQ[value]|>];
+safeRate[c_,n_Integer] := If[n<0,Failure["Domain",<||>],If[n==0,Missing["Undefined"],c/n 120000]];
+safeMean[values_List] := If[Length[values]==0,Missing["Undefined"],Total[values]/Length[values]];
+check["rate_zero",MissingQ[safeRate[c,0]],{"c real","N=0"}];
+check["mean_zero",MissingQ[safeMean[{}]],{"empty sequence"}];
+check["rate_defined",FullSimplify[c/n 120000==c 120000/n,Element[c,Reals]&&Element[n,Integers]&&n>0],{"c real","N positive integer"}];
+check["mean_scaling_base",FullSimplify[0/n==0,n>0],{"N positive integer","empty partial sum"}];
+check["mean_scaling_step",Resolve[ForAll[{s,t,n},Implies[n>0,(s+t)/n==s/n+t/n]],Reals],{"N positive integer","induction on sum length with fixed N"}];
+check["mean_weights",FullSimplify[Sum[1/n,{i,1,n}]==1,Element[n,Integers]&&n>0],{"N positive integer"}];
+check["relative_change_denominator",Resolve[ForAll[{x,y},Implies[y!=0,((x-y)/y)y==x-y]],Reals],{"x,y real","y nonzero"}];
+check["ratio_determined",Resolve[ForAll[{x,y,q},Implies[y!=0,Equivalent[y q==x,q==x/y]]],Reals],{"x,y real","y nonzero"}];
+check["ratio_zero_no_unique",Resolve[Exists[{q1,q2},q1!=q2&&0q1==0&&0q2==0],Reals],{"numerator=0","denominator=0"}];
+check["rate_actual_validity",AllTrue[{168799,4623107,1012985,1009304},IntegerQ[#]&&#>0&],{"published corpus sizes"}];
+check["rate_actual_values",(safeRate@@#& /@ {{14,168799},{242,4623107},{180,1012985},{236,1009304}})=={1680000/168799,29040000/4623107,21600000/1012985,28320000/1009304},{"positive published corpus sizes"}];
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];

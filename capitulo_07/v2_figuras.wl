@@ -1,0 +1,13 @@
+ClearAll[check];
+original={{1,1},{1,0},{1,1},{0,1},{1,0},{0,1},{1,0},{1,1},{0,0},{1,0}};
+first={{1,0},{1,1},{1,0},{0,1},{0,1},{1,0},{0,1},{1,1},{0,0},{1,1}};
+second={{1,0},{1,1},{0,0},{0,1},{0,1},{1,1},{0,1},{1,0},{1,1},{1,1}};
+results={};
+check[name_,condition_]:=If[TrueQ[condition],AppendTo[results,name],Print[name];Exit[1]];
+check["lengths",Length/@{original,first,second}==={10,10,10}];
+check["differences",(Total[#[[All,1]]-#[[All,2]]]/10&/@{original,first,second})==={1/5,0,-1/10}];
+check["all_pairs_from_source",And@@(MemberQ[original,#]&/@Join[first,second])];
+check["all_binary_entries",And@@(MemberQ[{0,1},#]&/@Flatten[{original,first,second}])];
+check["sample_counts",Total[first]==={6,6}&&Total[second]==={6,7}];
+check["ambiguous_source_pair",original[[2]]===original[[5]]&&2!=5];
+Print[ExportString[<|"passed"->True,"checks"->Length[results],"results"->results|>,"RawJSON"]];

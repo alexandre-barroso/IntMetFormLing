@@ -1,0 +1,14 @@
+ClearAll["Global`*"];
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+safeF1[tp_,fp_,fn_]:=If[2tp+fp+fn>0,2tp/(2tp+fp+fn),Missing["Undefined"]];
+check["f1_general_range",Resolve[ForAll[{tp,fp,fn},Implies[tp>=0&&fp>=0&&fn>=0&&2tp+fp+fn>0,0<=2tp/(2tp+fp+fn)<=1]],Reals]];
+check["f1_zero_tp_defined",Resolve[ForAll[{fp,fn},Implies[fp>=0&&fn>=0&&fp+fn>0,0/(fp+fn)==0]],Reals]];
+check["f1_zero_tp_examples",safeF1[0,1,0]==0&&safeF1[0,0,1]==0];
+check["f1_empty_counts_undefined",MissingQ[safeF1[0,0,0]]];
+check["macro_sum_base",0<=0<=0];
+check["macro_sum_induction",Resolve[ForAll[{n,total,last},Implies[n>=0&&0<=total<=n&&0<=last<=1,0<=total+last<=n+1]],Reals]];
+check["macro_mean_scaling",Resolve[ForAll[{n,total},Implies[n>0&&0<=total<=n,0<=total/n<=1]],Reals]];
+report=<|"backend"->"Wolfram Language","scope"->"Quantifier elimination for F1 including its domain; explicit undefined empty counts; finite-average induction certificates.","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];

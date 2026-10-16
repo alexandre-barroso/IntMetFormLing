@@ -1,0 +1,56 @@
+import json
+import sympy as sp
+results=[]
+def check(identifier,condition):
+    results.append({'id':identifier,'passed':bool(condition)})
+def chain(values):
+    return all(sp.simplify(sp.expand_log(a-b))==0 for a,b in zip(values,values[1:]))
+Q=sp.Rational
+posterior,evidence,likelihood,prior=sp.symbols('posterior evidence likelihood prior',positive=True)
+check('posterior_from_product',sp.solve(sp.Eq(posterior*evidence,likelihood*prior),posterior)==[likelihood*prior/evidence])
+q1,q2=sp.symbols('q1 q2',positive=True)
+S=q1/2+q2/3
+check('posterior_normalization_chain',chain([(q1/2)/S+(q2/3)/S,(q1/2+q2/3)/S,S/S,sp.Integer(1)]))
+rsa_membership=sp.Matrix([[1,1,0,0],[1,0,1,0],[0,1,0,1]])
+rsa_extensions=[sum(rsa_membership.col(j)) for j in range(4)]
+rsa_weights=sp.Matrix(3,4,lambda i,j:rsa_membership[i,j]/rsa_extensions[j])
+rsa_speaker=sp.Matrix(3,4,lambda i,j:rsa_weights[i,j]/sum(rsa_weights.row(i)))
+check('rsa_extension_weights',rsa_extensions==[2,2,1,1] and rsa_weights==sp.Matrix([[Q(1,2),Q(1,2),0,0],[Q(1,2),0,1,0],[0,Q(1,2),0,1]]))
+check('rsa_speaker_blue',list(rsa_speaker.col(0))==[Q(1,2),Q(1,3),0])
+check('rsa_speaker_circle_chain',chain([Q(1,2)/(Q(1,2)+1),Q(1,2)/Q(3,2),Q(1,2)*Q(2,3),Q(1,3)]) and 1/Q(3,2)==Q(2,3))
+k,j=sp.symbols('k j',integer=True,nonnegative=True)
+check('binomial_factorial',sp.combsimp(sp.binomial(k+j,k)-sp.factorial(k+j)/(sp.factorial(k)*sp.factorial(j)))==0)
+p=sp.symbols('p',real=True)
+check('bernoulli_mean',sp.expand(1*p+0*(1-p)-p)==0)
+check('bernoulli_variance_chain',chain([p*(1-p)**2+(1-p)*(0-p)**2,p*(1-2*p+p*p)+(1-p)*p*p,p-2*p*p+p**3+p*p-p**3,p-p*p,p*(1-p)]))
+check('binomial_source_zero',sp.binomial(100,0)==1 and Q(1,1000)**0==1 and sp.binomial(100,0)*Q(1,1000)**0*(1-Q(1,1000))**100==Q(999,1000)**100)
+check('log2_greek_reductions',chain([sp.log(Q(3,8),2),sp.log(3,2)-3]) and chain([sp.log(Q(2,8),2),sp.log(Q(1,4),2),sp.Integer(-2)]) and sp.log(Q(1,8),2)==-3 and sp.log(Q(2,3),2)==1-sp.log(3,2) and sp.log(Q(1,3),2)==-sp.log(3,2))
+check('group_entropy_chain',chain([-Q(2,3)*sp.log(Q(2,3),2)-Q(1,3)*sp.log(Q(1,3),2),-Q(2,3)*(1-sp.log(3,2))-Q(1,3)*(-sp.log(3,2)),-Q(2,3)+Q(2,3)*sp.log(3,2)+Q(1,3)*sp.log(3,2),sp.log(3,2)-Q(2,3)]))
+check('surprise_product_chain',chain([-sp.log(Q(2,8)*Q(1,2),2),-sp.log(Q(2,8),2)-sp.log(Q(1,2),2),-sp.log(Q(1,4),2)-sp.log(Q(1,2),2),sp.Integer(2)+1,sp.Integer(3)]))
+check('surprise_graph_points',Q(1,8)==Q(125,1000) and Q(1,2)==Q(5,10) and -sp.log(Q(125,1000),2)==3 and -sp.log(Q(5,10),2)==1 and -sp.log(1,2)==0)
+t=sp.symbols('t',positive=True)
+mu=Q(-268,100);sigma=Q(59,100)
+model=sp.exp(-(sp.log(t)-mu)**2/(2*sigma**2))/(sigma*t*sp.sqrt(2*sp.pi))
+plotted=sp.exp(-(sp.log(t)+Q(268,100))**2/(2*Q(59,100)**2))/(t*Q(59,100)*sp.sqrt(2*sp.pi))
+check('lognormal_source_model',sp.simplify(model-plotted)==0 and sp.simplify(sp.log(t)-mu-(sp.log(t)+Q(268,100)))==0)
+check('lognormal_source_domain',sigma>0 and 0<Q(2,1000)<Q(3,100)<Q(14,100)<Q(8,10) and plotted.is_positive is True)
+kappa_table=sp.Matrix([[20,20],[10,50]])
+check('kappa_margins',[sum(kappa_table.row(i)) for i in range(2)]==[40,60] and [sum(kappa_table.col(j)) for j in range(2)]==[30,70] and sum(kappa_table)==100)
+check('unequal_conditional_masses',Q(2,3)!=Q(1,2) and Q(1,3)!=Q(1,2))
+positive_p=sp.symbols('positive_p',positive=True)
+check('surprisal_change_base',sp.simplify(-sp.log(positive_p,2)+sp.log(positive_p)/sp.log(2))==0)
+check('surprise_eighth_chain',sp.Integer(2)**-3==Q(1,8) and sp.log(Q(1,8),2)==-3 and -sp.log(Q(1,8),2)==-(-3)==3)
+index=sp.symbols("index",integer=True)
+size=sp.symbols("size",integer=True,nonnegative=True)
+check("bernoulli_sum_means",sp.summation(p,(index,1,size))==size*p)
+joint_mass=sp.symbols('joint_mass',nonnegative=True)
+check('posterior_joint_weight_chain',chain([(joint_mass/evidence)*evidence,joint_mass,(joint_mass/prior)*prior]) and sp.cancel(joint_mass/evidence-(joint_mass/prior)*prior/evidence)==0)
+check('binomial_one_factorial_chain',chain([sp.binomial(100,1),sp.factorial(100)/(sp.factorial(1)*sp.factorial(99)),100*sp.factorial(99)/sp.factorial(99),sp.Integer(100)]))
+positive_a,positive_b=sp.symbols('positive_a positive_b',positive=True)
+check('surprise_product_full_chain',chain([-sp.log(positive_a*positive_b,2),-(sp.log(positive_a,2)+sp.log(positive_b,2)),-sp.log(positive_a,2)-sp.log(positive_b,2)]))
+fxy,fx,fy,n=sp.symbols('fxy fx fy n',positive=True)
+pmi_arguments=[(fxy/n)/((fx/n)*(fy/n)),(fxy/n)*(n**2/(fx*fy)),fxy*n/(fx*fy)]
+check('pmi_frequency_full_chain',all(v.is_positive is True for v in pmi_arguments) and chain([sp.log(v,2) for v in pmi_arguments]))
+report={'backend':'Python/SymPy','checks':len(results),'passed':all(r['passed'] for r in results),'results':results}
+print(json.dumps(report))
+raise SystemExit(0 if report['passed'] else 1)

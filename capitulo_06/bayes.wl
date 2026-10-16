@@ -1,0 +1,10 @@
+results={};
+check[id_,condition_]:=AppendTo[results,<|"id"->id,"passed"->TrueQ[condition]|>];
+assumptions=Element[n,Integers]&&n>0&&Element[weights,Vectors[n,Reals]]&&Element[ones,Vectors[n,Reals]];
+posterior=weights/(ones.weights);
+normalization=TensorReduce[ones.posterior,Assumptions->assumptions];
+check["bayes_finite_normalization",FullSimplify[normalization==1,assumptions&&ones.weights>0]];
+check["bayes_nonnegative",FullSimplify[priorEntry*likelihoodEntry>=0&&priorEntry*likelihoodEntry/evidence>=0,priorEntry>=0&&likelihoodEntry>=0&&evidence>0]];
+report=<|"backend"->"Wolfram","checks"->Length[results],"passed"->And@@Lookup[results,"passed"],"results"->results|>;
+Print[ExportString[report,"RawJSON"]];
+Exit[If[report["passed"],0,1]];
